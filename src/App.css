@@ -1,0 +1,233 @@
+/* ════════════════════════════════════════════════════════════
+   App shell
+   ════════════════════════════════════════════════════════════ */
+
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+}
+
+/* ── Header ─────────────────────────────────────────────── */
+
+.app-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 20px;
+  height: 52px;
+  background: #2d3436;
+  color: #fff;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  z-index: 10;
+}
+
+.app-logo {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.app-title {
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.app-subtitle {
+  margin-left: auto;
+  font-size: 12px;
+  opacity: 0.65;
+}
+
+/* ── Body (canvas + right panel) ────────────────────────── */
+
+.app-body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+/* ── Canvas area (80%) ───────────────────────────────────── */
+
+.canvas-area {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.canvas-wrapper {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.map-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Hint bar at bottom of canvas */
+.canvas-hint {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(45, 52, 54, 0.75);
+  color: #fff;
+  font-size: 12px;
+  padding: 5px 14px;
+  border-radius: 20px;
+  white-space: nowrap;
+  pointer-events: none;
+  backdrop-filter: blur(4px);
+}
+
+/* ── Right panel (20%, ~260 px min) ──────────────────────── */
+
+.right-panel {
+  width: 20%;
+  min-width: 220px;
+  max-width: 320px;
+  height: 100%;
+  background: #ffffff;
+  border-left: 1px solid #dfe6e9;
+  padding: 20px 16px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  flex-shrink: 0;
+  box-shadow: -2px 0 8px rgba(0,0,0,0.06);
+}
+
+.panel-title {
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #636e72;
+  margin-bottom: 4px;
+}
+
+.panel-divider {
+  height: 1px;
+  background: #dfe6e9;
+  margin: 4px 0;
+}
+
+/* ── Form fields ─────────────────────────────────────────── */
+
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.field-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #636e72;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.field-input,
+.field-select {
+  width: 100%;
+  padding: 7px 10px;
+  border: 1.5px solid #b2bec3;
+  border-radius: 6px;
+  font-size: 13px;
+  font-family: inherit;
+  color: #2d3436;
+  background: #f8f9fa;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.field-input:focus,
+.field-select:focus {
+  border-color: #74b9ff;
+  background: #fff;
+}
+
+.field-range {
+  width: 100%;
+  cursor: pointer;
+  accent-color: #0984e3;
+}
+
+.field-meta {
+  font-size: 12px;
+  color: #636e72;
+  font-style: italic;
+}
+
+.color-swatch {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  border: 1.5px solid rgba(0,0,0,0.2);
+  margin-left: 6px;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+/* Stack swatch next to select */
+.field-group:has(.field-select) {
+  position: relative;
+}
+
+/* ── Buttons ─────────────────────────────────────────────── */
+
+.btn {
+  padding: 9px 18px;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+  letter-spacing: 0.02em;
+}
+
+.btn:hover  { opacity: 0.88; }
+.btn:active { transform: scale(0.97); }
+
+.btn-primary {
+  background: #0984e3;
+  color: #fff;
+}
+
+.btn-secondary {
+  background: #636e72;
+  color: #fff;
+}
+
+.btn-danger {
+  background: #d63031;
+  color: #fff;
+  width: 100%;
+}
+
+/* ── Bottom bar ──────────────────────────────────────────── */
+
+.bottom-bar {
+  height: 56px;
+  background: #f1f2f6;
+  border-top: 1px solid #dfe6e9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  flex-shrink: 0;
+  box-shadow: 0 -2px 6px rgba(0,0,0,0.05);
+}
