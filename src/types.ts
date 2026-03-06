@@ -36,6 +36,7 @@ export interface SketchMapEdge {
   style: EdgeStyle;
   weight: number; // 1–10, affects line thickness
   cost: number;   // non-negative, in seconds, used for pathfinding algorithms
+  constraint: string; // optional additional constraint for pathfinding algorithms
 }
 
 // ──────────────────────────────────────────────────────────────

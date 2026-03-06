@@ -1,6 +1,7 @@
 import type { MapStore } from '../hooks/useMapStore';
 import { TRIANGLE_COLORS } from '../types';
 import type { TriangleColor, EdgeStyle } from '../types';
+import { useConstraints } from '../context/ConstraintsContext';
 
 interface Props {
   store: MapStore;
@@ -17,6 +18,7 @@ const COLOR_NAMES: Record<TriangleColor, string> = {
 export function RightPanel({ store }: Props) {
   const { state, updateTriangle, deleteTriangle, updateLine, deleteLine } = store;
   const { selection, triangles, lines } = state;
+  const { constraints, loading: constraintsLoading } = useConstraints();
 
   // ── Nothing selected → hidden ─────────────────────────────
   if (selection.kind === 'none') return null;
@@ -180,6 +182,24 @@ export function RightPanel({ store }: Props) {
               updateLine(line.id, { cost: Math.max(0, Number(e.target.value)) })
             }
           />
+        </div>
+
+        <div className="field-group">
+          <label className="field-label">Constraint</label>
+          {constraintsLoading ? (
+            <p className="field-meta">Loading constraints…</p>
+          ) : (
+            <select
+              className="field-select"
+              value={line.constraint}
+              onChange={(e) => updateLine(line.id, { constraint: e.target.value })}
+            >
+              <option value="">(none)</option>
+              {constraints.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+          )}
         </div>
 
         <div className="panel-divider" />

@@ -131,6 +131,7 @@ export function useMapStore() {
       style: 'solid',
       weight: 2,
       cost: 0,
+      constraint: '',
     };
     dispatch({ type: 'ADD_LINE', payload: line });
   }, []);
@@ -140,7 +141,7 @@ export function useMapStore() {
   }, []);
 
   const updateLine = useCallback(
-    (id: string, patch: { label?: string; style?: EdgeStyle; weight?: number; cost?: number }) => {
+    (id: string, patch: { label?: string; style?: EdgeStyle; weight?: number; cost?: number; constraint?: string }) => {
       dispatch({ type: 'UPDATE_LINE', payload: { id, ...patch } });
     },
     []

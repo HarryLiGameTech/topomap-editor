@@ -1,4 +1,5 @@
 import { useMapStore } from './hooks/useMapStore';
+import { ConstraintsProvider } from './context/ConstraintsContext';
 import { CanvasEditor } from './components/CanvasEditor';
 import { RightPanel }   from './components/RightPanel';
 import { BottomBar }    from './components/BottomBar';
@@ -18,6 +19,7 @@ export default function App() {
   };
 
   return (
+    <ConstraintsProvider>
     <div className="app-shell">
       {/* ── Top header bar ─────────────────────────────── */}
       <header className="app-header">
@@ -42,5 +44,6 @@ export default function App() {
       {/* ── Bottom action bar ──────────────────────────── */}
       <BottomBar onExport={handleExport} onImport={handleImport} />
     </div>
+    </ConstraintsProvider>
   );
 }
