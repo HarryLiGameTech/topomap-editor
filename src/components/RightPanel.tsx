@@ -86,6 +86,19 @@ export function RightPanel({ store }: Props) {
           <span className="color-swatch" style={{ backgroundColor: tri.color }} />
         </div>
 
+        <div className="field-group">
+          <label className="field-label">Description</label>
+          <textarea
+            className="field-textarea"
+            value={tri.description}
+            placeholder="Additional info (e.g. for pathfinding results)"
+            rows={4}
+            onChange={(e) =>
+              updateTriangle(tri.id, { description: e.target.value })
+            }
+          />
+        </div>
+
         <div className="panel-divider" />
 
         <button
@@ -151,6 +164,21 @@ export function RightPanel({ store }: Props) {
             max={10}
             value={line.weight}
             onChange={(e) => updateLine(line.id, { weight: Number(e.target.value) })}
+          />
+        </div>
+
+        <div className="field-group">
+          <label className="field-label">Cost (seconds)</label>
+          <input
+            className="field-input"
+            type="number"
+            min={0}
+            step={1}
+            value={line.cost}
+            placeholder="e.g. 120"
+            onChange={(e) =>
+              updateLine(line.id, { cost: Math.max(0, Number(e.target.value)) })
+            }
           />
         </div>
 

@@ -104,6 +104,7 @@ export function useMapStore() {
       y,
       label: '',
       color: '#4a90e2',
+      description: '',
     };
     dispatch({ type: 'ADD_TRIANGLE', payload: triangle });
   }, []);
@@ -113,7 +114,7 @@ export function useMapStore() {
   }, []);
 
   const updateTriangle = useCallback(
-    (id: string, patch: { label?: string; color?: TriangleColor; x?: number; y?: number }) => {
+    (id: string, patch: { label?: string; color?: TriangleColor; x?: number; y?: number; description?: string }) => {
       dispatch({ type: 'UPDATE_TRIANGLE', payload: { id, ...patch } });
     },
     []
@@ -129,6 +130,7 @@ export function useMapStore() {
       label: '',
       style: 'solid',
       weight: 2,
+      cost: 0,
     };
     dispatch({ type: 'ADD_LINE', payload: line });
   }, []);
@@ -138,7 +140,7 @@ export function useMapStore() {
   }, []);
 
   const updateLine = useCallback(
-    (id: string, patch: { label?: string; style?: EdgeStyle; weight?: number }) => {
+    (id: string, patch: { label?: string; style?: EdgeStyle; weight?: number; cost?: number }) => {
       dispatch({ type: 'UPDATE_LINE', payload: { id, ...patch } });
     },
     []

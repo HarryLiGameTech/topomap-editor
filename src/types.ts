@@ -25,6 +25,7 @@ export interface SketchMapNode {
   y: number;
   label: string;
   color: TriangleColor;
+  description: string; // optional longer text description, used for additional info for pathfinding results
 }
 
 export interface SketchMapEdge {
@@ -34,6 +35,7 @@ export interface SketchMapEdge {
   label: string;
   style: EdgeStyle;
   weight: number; // 1–10, affects line thickness
+  cost: number;   // non-negative, in seconds, used for pathfinding algorithms
 }
 
 // ──────────────────────────────────────────────────────────────

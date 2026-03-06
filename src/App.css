@@ -157,6 +157,25 @@
   background: #fff;
 }
 
+.field-textarea {
+  width: 100%;
+  padding: 7px 10px;
+  border: 1.5px solid #b2bec3;
+  border-radius: 6px;
+  font-size: 13px;
+  font-family: inherit;
+  color: #2d3436;
+  background: #f8f9fa;
+  outline: none;
+  resize: vertical;
+  transition: border-color 0.15s;
+}
+
+.field-textarea:focus {
+  border-color: #74b9ff;
+  background: #fff;
+}
+
 .field-range {
   width: 100%;
   cursor: pointer;
