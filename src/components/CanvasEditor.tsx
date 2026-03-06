@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react';
-import type { Triangle, Line, Selection } from '../types';
+import type { SketchMapNode, SketchMapEdge, Selection } from '../types';
 import type { MapStore } from '../hooks/useMapStore';
 
 // ──────────────────────────────────────────────────────────────
@@ -26,13 +26,13 @@ function distToSegment(
   return Math.hypot(px - (x1 + t * dx), py - (y1 + t * dy));
 }
 
-function hitTestTriangle(t: Triangle, px: number, py: number): boolean {
+function hitTestTriangle(t: SketchMapNode, px: number, py: number): boolean {
   return Math.hypot(px - t.x, py - t.y) <= HIT_RADIUS;
 }
 
 function hitTestLine(
-  line: Line,
-  triangles: Triangle[],
+  line: SketchMapEdge,
+  triangles: SketchMapNode[],
   px: number,
   py: number
 ): boolean {
@@ -64,7 +64,7 @@ function drawGrid(ctx: CanvasRenderingContext2D, w: number, h: number) {
 
 function drawTriangleShape(
   ctx: CanvasRenderingContext2D,
-  t: Triangle,
+  t: SketchMapNode,
   selected: boolean
 ) {
   const { x, y, color, label } = t;
@@ -125,8 +125,8 @@ function lighten(hex: string): string {
 
 function drawLineShape(
   ctx: CanvasRenderingContext2D,
-  line: Line,
-  triangles: Triangle[],
+  line: SketchMapEdge,
+  triangles: SketchMapNode[],
   selected: boolean
 ) {
   const from = triangles.find((t) => t.id === line.fromId);

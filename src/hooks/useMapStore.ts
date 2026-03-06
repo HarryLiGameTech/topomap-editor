@@ -1,23 +1,23 @@
 import { useReducer, useCallback } from 'react';
-import type { Triangle, Line, Selection, TriangleColor, EdgeStyle } from '../types';
+import type { SketchMapNode, SketchMapEdge, Selection, TriangleColor, EdgeStyle } from '../types';
 
 // ──────────────────────────────────────────────────────────────
 // State & Action types
 // ──────────────────────────────────────────────────────────────
 
 export interface MapState {
-  triangles: Triangle[];
-  lines: Line[];
+  triangles: SketchMapNode[];
+  lines: SketchMapEdge[];
   selection: Selection;
 }
 
 type Action =
-  | { type: 'ADD_TRIANGLE'; payload: Triangle }
+  | { type: 'ADD_TRIANGLE'; payload: SketchMapNode }
   | { type: 'DELETE_TRIANGLE'; id: string }
-  | { type: 'UPDATE_TRIANGLE'; payload: Partial<Triangle> & { id: string } }
-  | { type: 'ADD_LINE'; payload: Line }
+  | { type: 'UPDATE_TRIANGLE'; payload: Partial<SketchMapNode> & { id: string } }
+  | { type: 'ADD_LINE'; payload: SketchMapEdge }
   | { type: 'DELETE_LINE'; id: string }
-  | { type: 'UPDATE_LINE'; payload: Partial<Line> & { id: string } }
+  | { type: 'UPDATE_LINE'; payload: Partial<SketchMapEdge> & { id: string } }
   | { type: 'SET_SELECTION'; selection: Selection }
   | { type: 'CLEAR_SELECTION' };
 
@@ -98,7 +98,7 @@ export function useMapStore() {
   // ── Triangle actions ──────────────────────────────────────
 
   const addTriangle = useCallback((x: number, y: number) => {
-    const triangle: Triangle = {
+    const triangle: SketchMapNode = {
       id: uid(),
       x,
       y,
@@ -122,7 +122,7 @@ export function useMapStore() {
   // ── Line actions ──────────────────────────────────────────
 
   const addLine = useCallback((fromId: string, toId: string) => {
-    const line: Line = {
+    const line: SketchMapEdge = {
       id: uid(),
       fromId,
       toId,

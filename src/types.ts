@@ -19,7 +19,7 @@ export const TRIANGLE_COLORS: TriangleColor[] = [
 
 export type EdgeStyle = 'solid' | 'dashed';
 
-export interface Triangle {
+export interface SketchMapNode {
   id: string;
   x: number;
   y: number;
@@ -27,7 +27,7 @@ export interface Triangle {
   color: TriangleColor;
 }
 
-export interface Line {
+export interface SketchMapEdge {
   id: string;
   fromId: string;
   toId: string;
