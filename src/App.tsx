@@ -4,15 +4,22 @@ import { CanvasEditor } from './components/CanvasEditor';
 import { RightPanel }   from './components/RightPanel';
 import { BottomBar }    from './components/BottomBar';
 import { convertToDSL } from './utils/toDSL';
+import { sendValidate }  from './api/validate';
 import './App.css';
 
 export default function App() {
   const store = useMapStore();
 
-  // TODO: send DSL to backend — currently prints to console for debug
-  const handleValidate = () => {
+  const handleValidate = async () => {
     const dsl = convertToDSL(store.state);
     console.warn('[Validate] DSL output:\n' + dsl);
+
+    const result = await sendValidate(dsl);
+    if (result.status === 'success') {
+      console.log('[Validate] Success:', result.message);
+    } else {
+      console.error('[Validate] Error:', result.message);
+    }
   };
 
   // TODO: implement import
