@@ -1,11 +1,12 @@
 import { useReducer, useCallback } from 'react';
-import type { SketchMapNode, SketchMapEdge, Selection, TriangleColor, EdgeStyle } from '../types';
+import type { SketchMapNode, SketchMapEdge, Selection, TriangleColor, EdgeStyle, MapMeta } from '../types';
 
 // ──────────────────────────────────────────────────────────────
 // State & Action types
 // ──────────────────────────────────────────────────────────────
 
 export interface MapState {
+  meta: MapMeta;
   triangles: SketchMapNode[];
   lines: SketchMapEdge[];
   selection: Selection;
@@ -18,6 +19,7 @@ type Action =
   | { type: 'ADD_LINE'; payload: SketchMapEdge }
   | { type: 'DELETE_LINE'; id: string }
   | { type: 'UPDATE_LINE'; payload: Partial<SketchMapEdge> & { id: string } }
+  | { type: 'UPDATE_META'; payload: Partial<MapMeta> }
   | { type: 'SET_SELECTION'; selection: Selection }
   | { type: 'CLEAR_SELECTION' };
 
@@ -70,6 +72,9 @@ function reducer(state: MapState, action: Action): MapState {
     case 'SET_SELECTION':
       return { ...state, selection: action.selection };
 
+    case 'UPDATE_META':
+      return { ...state, meta: { ...state.meta, ...action.payload } };
+
     case 'CLEAR_SELECTION':
       return { ...state, selection: { kind: 'none' } };
 
@@ -83,6 +88,7 @@ function reducer(state: MapState, action: Action): MapState {
 // ──────────────────────────────────────────────────────────────
 
 const INITIAL_STATE: MapState = {
+  meta: { mapName: 'ExampleMap', permResident: 120 },
   triangles: [],
   lines: [],
   selection: { kind: 'none' },
@@ -192,6 +198,10 @@ export function useMapStore() {
     dispatch({ type: 'CLEAR_SELECTION' });
   }, []);
 
+  const updateMeta = useCallback((patch: Partial<MapMeta>) => {
+    dispatch({ type: 'UPDATE_META', payload: patch });
+  }, []);
+
   return {
     state,
     addTriangle,
@@ -200,6 +210,7 @@ export function useMapStore() {
     addLine,
     deleteLine,
     updateLine,
+    updateMeta,
     selectTriangle,
     selectLine,
     clearSelection,

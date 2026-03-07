@@ -19,6 +19,11 @@ export const TRIANGLE_COLORS: TriangleColor[] = [
 
 export type EdgeStyle = 'solid' | 'dashed';
 
+export interface MapMeta {
+  mapName: string;      // used as the topo-map identifier in DSL
+  permResident: number; // permanent resident count passed as DSL param
+}
+
 export interface SketchMapNode {
   id: string;
   x: number;

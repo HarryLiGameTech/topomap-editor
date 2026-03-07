@@ -14,7 +14,7 @@ export default function App() {
     const dsl = convertToDSL(store.state);
     console.warn('[Validate] DSL output:\n' + dsl);
 
-    const result = await sendValidate(dsl);
+    const result = await sendValidate(dsl, store.state.meta.mapName);
     if (result.status === 'success') {
       console.log('[Validate] Success:', result.message);
     } else {

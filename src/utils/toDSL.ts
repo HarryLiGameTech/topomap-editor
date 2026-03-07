@@ -4,7 +4,8 @@ import type { MapState } from '../hooks/useMapStore';
  * Converts the current map state into the topomap DSL text.
  */
 export function convertToDSL(state: MapState): string {
-  const { triangles, lines } = state;
+  const { meta, triangles, lines } = state;
+  const { mapName, permResident } = meta;
 
   const fallback = (id: string) => `n_${id.replaceAll('-', '')}`;
 
@@ -14,7 +15,7 @@ export function convertToDSL(state: MapState): string {
     return node.label || fallback(node.id);
   };
 
-  let dsl = 'topo-map ExampleMap(){\n   let params: {permResident: Int} = {\n       permResident = 120\n    }\n';
+  let dsl = `topo-map ${mapName}(){\n   let params: {permResident: Int} = {\n       permResident = ${permResident}\n    }\n`;
 
   for (const node of triangles) {
     const lbl = node.label || fallback(node.id);

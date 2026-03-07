@@ -16,10 +16,10 @@ type ValidateResponse = ValidateSuccess | ValidateError;
  * Sends the DSL files to the Spring Boot /validate endpoint.
  * Always resolves (never throws) — the returned object carries the status.
  */
-export async function sendValidate(dsl: string): Promise<ValidateResponse> {
+export async function sendValidate(dsl: string, mapName: string): Promise<ValidateResponse> {
   const body: Record<string, string> = {
-    configuration: 'building-includes{\n    submap ExampleMap\n}',
-    ExampleMap: dsl,
+    configuration: `building-includes{\n  submap ${mapName}\n}`,
+    [mapName]: dsl,
   };
 
   try {

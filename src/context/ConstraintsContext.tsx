@@ -21,7 +21,7 @@ const ConstraintsContext = createContext<ConstraintsCtx>({
 // ──────────────────────────────────────────────────────────────
 
 // Change this URL to wherever your constraints list is served from.
-const CONSTRAINTS_URL = '/api/constraints';
+const CONSTRAINTS_URL = '/api/v1/test-constraints';
 
 export function ConstraintsProvider({ children }: { children: ReactNode }) {
   const [constraints, setConstraints] = useState<string[]>([]);
@@ -34,10 +34,30 @@ export function ConstraintsProvider({ children }: { children: ReactNode }) {
     fetch(CONSTRAINTS_URL)
       .then((res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json() as Promise<string[]>;
+        return res.json() as Promise<unknown>;
       })
       .then((data) => {
-        if (!cancelled) setConstraints(data);
+        if (cancelled) return;
+
+        // Accept a bare string[] OR any object whose first array-valued
+        // property contains the list (e.g. { constraints: [...] })
+        let arr: string[];
+        if (Array.isArray(data)) {
+          arr = data as string[];
+        } else if (data !== null && typeof data === 'object') {
+          const found = Object.values(data as Record<string, unknown>).find(
+            (v): v is string[] => Array.isArray(v)
+          );
+          arr = found ?? [];
+          if (!found) {
+            console.warn('[ConstraintsProvider] Response is an object with no array property:', data);
+          }
+        } else {
+          arr = [];
+          console.warn('[ConstraintsProvider] Unexpected response shape:', data);
+        }
+
+        setConstraints(arr);
       })
       .catch((err: unknown) => {
         if (!cancelled) {

@@ -16,12 +16,41 @@ const COLOR_NAMES: Record<TriangleColor, string> = {
 };
 
 export function RightPanel({ store }: Props) {
-  const { state, updateTriangle, deleteTriangle, updateLine, deleteLine } = store;
-  const { selection, triangles, lines } = state;
+  const { state, updateTriangle, deleteTriangle, updateLine, deleteLine, updateMeta } = store;
+  const { selection, triangles, lines, meta } = state;
   const { constraints, loading: constraintsLoading } = useConstraints();
 
-  // ── Nothing selected → hidden ─────────────────────────────
-  if (selection.kind === 'none') return null;
+  // ── Nothing selected → map meta panel ────────────────────
+  if (selection.kind === 'none') {
+    return (
+      <aside className="right-panel">
+        <h2 className="panel-title">Map Properties</h2>
+
+        <div className="field-group">
+          <label className="field-label">Map Name</label>
+          <input
+            className="field-input"
+            type="text"
+            value={meta.mapName}
+            placeholder="e.g. ExampleMap"
+            onChange={(e) => updateMeta({ mapName: e.target.value })}
+          />
+        </div>
+
+        <div className="field-group">
+          <label className="field-label">Permanent Residents</label>
+          <input
+            className="field-input"
+            type="number"
+            min={0}
+            step={1}
+            value={meta.permResident}
+            onChange={(e) => updateMeta({ permResident: Math.max(0, Number(e.target.value)) })}
+          />
+        </div>
+      </aside>
+    );
+  }
   if (selection.kind === 'triangles' && selection.ids.length !== 1) return null;
 
   // ── Triangle panel ────────────────────────────────────────
