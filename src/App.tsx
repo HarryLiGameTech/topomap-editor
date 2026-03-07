@@ -3,14 +3,16 @@ import { ConstraintsProvider } from './context/ConstraintsContext';
 import { CanvasEditor } from './components/CanvasEditor';
 import { RightPanel }   from './components/RightPanel';
 import { BottomBar }    from './components/BottomBar';
+import { convertToDSL } from './utils/toDSL';
 import './App.css';
 
 export default function App() {
   const store = useMapStore();
 
-  // TODO: implement export
-  const handleExport = () => {
-    console.log('[TODO] Export map', store.state);
+  // TODO: send DSL to backend — currently prints to console for debug
+  const handleValidate = () => {
+    const dsl = convertToDSL(store.state);
+    console.warn('[Validate] DSL output:\n' + dsl);
   };
 
   // TODO: implement import
@@ -42,7 +44,7 @@ export default function App() {
       </div>
 
       {/* ── Bottom action bar ──────────────────────────── */}
-      <BottomBar onExport={handleExport} onImport={handleImport} />
+      <BottomBar onValidate={handleValidate} onImport={handleImport} />
     </div>
     </ConstraintsProvider>
   );
