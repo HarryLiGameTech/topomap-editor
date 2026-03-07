@@ -88,6 +88,40 @@
   backdrop-filter: blur(4px);
 }
 
+/* Background image controls — top-left corner of canvas */
+.canvas-controls {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  display: flex;
+  gap: 6px;
+  z-index: 5;
+}
+
+.btn-canvas-ctrl {
+  background: rgba(45, 52, 54, 0.72);
+  color: #fff;
+  font-size: 12px;
+  padding: 5px 12px;
+  border-radius: 16px;
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255,255,255,0.15);
+  transition: background 0.15s;
+}
+
+.btn-canvas-ctrl:hover {
+  background: rgba(45, 52, 54, 0.92);
+  opacity: 1;
+}
+
+.btn-canvas-ctrl--clear {
+  background: rgba(214, 48, 49, 0.72);
+}
+
+.btn-canvas-ctrl--clear:hover {
+  background: rgba(214, 48, 49, 0.92);
+}
+
 /* ── Right panel (20%, ~260 px min) ──────────────────────── */
 
 .right-panel {

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import type { SketchMapNode, SketchMapEdge, Selection } from '../types';
 import type { MapStore } from '../hooks/useMapStore';
 
@@ -165,7 +165,13 @@ interface Props {
 
 export function CanvasEditor({ store }: Props) {
   const { state, addTriangle, selectTriangle, selectLine, clearSelection, addLine } = store;
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const canvasRef   = useRef<HTMLCanvasElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Background image — local state, not part of map data
+  const [bgImage, setBgImage] = useState<HTMLImageElement | null>(null);
+  const bgImageRef = useRef<HTMLImageElement | null>(null);
+  bgImageRef.current = bgImage;
 
   // Keep a ref to current state so event handlers don't become stale
   const stateRef = useRef(state);
@@ -192,9 +198,20 @@ export function CanvasEditor({ store }: Props) {
     ctx.scale(dpr, dpr);
     ctx.clearRect(0, 0, w, h);
 
-    // Background
+    // Background colour
     ctx.fillStyle = '#f8f9fa';
     ctx.fillRect(0, 0, w, h);
+
+    // Background image — scale to fill, centred (object-fit: cover)
+    const bg = bgImageRef.current;
+    if (bg) {
+      const scale = Math.max(w / bg.naturalWidth, h / bg.naturalHeight);
+      const bw = bg.naturalWidth  * scale;
+      const bh = bg.naturalHeight * scale;
+      const bx = (w - bw) / 2;
+      const by = (h - bh) / 2;
+      ctx.drawImage(bg, bx, by, bw, bh);
+    }
 
     drawGrid(ctx, w, h);
 
@@ -253,6 +270,24 @@ export function CanvasEditor({ store }: Props) {
     ro.observe(canvas);
     return () => ro.disconnect();
   }, [draw]);
+
+  // ── Background image upload ───────────────────────────────
+
+  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      setBgImage(img);
+      URL.revokeObjectURL(url);
+    };
+    img.src = url;
+    // Reset so the same file can be re-selected
+    e.target.value = '';
+  }, []);
+
+  const handleClearBg = useCallback(() => setBgImage(null), []);
 
   // ── Mouse event helpers ───────────────────────────────────
 
@@ -343,6 +378,33 @@ export function CanvasEditor({ store }: Props) {
         className="map-canvas"
         style={{ display: 'block', width: '100%', height: '100%', cursor: 'crosshair' }}
       />
+
+      {/* ── Background image controls ─────────────────── */}
+      <div className="canvas-controls">
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          style={{ display: 'none' }}
+          onChange={handleFileChange}
+        />
+        <button
+          className="btn btn-canvas-ctrl"
+          onClick={() => fileInputRef.current?.click()}
+          title="Set background image"
+        >
+          {bgImage ? '🖼 Change BG' : '🖼 Set BG'}
+        </button>
+        {bgImage && (
+          <button
+            className="btn btn-canvas-ctrl btn-canvas-ctrl--clear"
+            onClick={handleClearBg}
+            title="Remove background image"
+          >
+            ✕ Clear BG
+          </button>
+        )}
+      </div>
       <div className="canvas-hint">
         {state.selection.kind === 'none' && (
           <span>Left-click on empty space to place a node · Click a node to select it</span>
