@@ -14,10 +14,15 @@ export function convertToDSL(state: MapState): string {
     return node.label || fallback(node.id);
   };
 
-  let dsl = 'topo-map ExampleMap(){\n';
+  let dsl = 'topo-map ExampleMap(){\n   let params: {permResident: Int} = {\n       permResident = 120\n    }\n';
 
   for (const node of triangles) {
-    dsl += `  topo-node ${node.label || fallback(node.id)}\n`;
+    const lbl = node.label || fallback(node.id);
+    if (node.description) {
+      dsl += `  topo-node ${lbl} {description = "${node.description}"}\n`;
+    } else {
+      dsl += `  topo-node ${lbl}\n`;
+    }
   }
 
   for (const edge of lines) {
