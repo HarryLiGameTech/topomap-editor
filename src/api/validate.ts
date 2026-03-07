@@ -1,4 +1,4 @@
-const VALIDATE_URL = '/api/validate';
+const VALIDATE_URL = '/api/v1/validate';
 
 interface ValidateSuccess {
   status: 'success';
