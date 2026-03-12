@@ -1,58 +1,80 @@
-import { useMapStore } from './hooks/useMapStore';
-import { ConstraintsProvider } from './context/ConstraintsContext';
-import { CanvasEditor } from './components/CanvasEditor';
-import { RightPanel }   from './components/RightPanel';
-import { BottomBar }    from './components/BottomBar';
-import { convertToDSL } from './utils/toDSL';
-import { sendValidate }  from './api/validate';
+import { useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { useAuthStore } from './store/authStore';
+import { ProtectedRoute } from './components/ProtectedRoute';
+import { LoginPage } from './pages/LoginPage';
+import { AuthCallbackPage } from './pages/AuthCallbackPage';
+import { EditorPage } from './pages/EditorPage';
+import { DashboardPage } from './pages/DashboardPage';
+import { NewMapPage } from './pages/NewMapPage';
+import { MapEditorPage } from './pages/MapEditorPage';
+import { VersionHistoryPage } from './pages/VersionHistoryPage';
+import { MapSettingsPage } from './pages/MapSettingsPage';
 import './App.css';
 
 export default function App() {
-  const store = useMapStore();
+  const restoreSession = useAuthStore(s => s.restoreSession);
 
-  const handleValidate = async () => {
-    const dsl = convertToDSL(store.state);
-    console.warn('[Validate] DSL output:\n' + dsl);
-
-    const result = await sendValidate(dsl, store.state.meta.mapName);
-    if (result.status === 'success') {
-      console.log('[Validate] Success:', result.message);
-    } else {
-      console.error('[Validate] Error:', result.message);
-    }
-  };
-
-  // TODO: implement import
-  const handleImport = () => {
-    console.log('[TODO] Import map');
-  };
+  // Validate any stored JWT on first load; sets isGuest silently if invalid
+  useEffect(() => {
+    restoreSession();
+  }, [restoreSession]);
 
   return (
-    <ConstraintsProvider>
-    <div className="app-shell">
-      {/* ── Top header bar ─────────────────────────────── */}
-      <header className="app-header">
-        <span className="app-logo">◭</span>
-        <h1 className="app-title">Topomap Editor</h1>
-        <span className="app-subtitle">
-          {store.state.triangles.length} nodes · {store.state.lines.length} edges
-        </span>
-      </header>
+    <BrowserRouter>
+      <Routes>
+        {/* Public routes */}
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/auth/callback" element={<AuthCallbackPage />} />
 
-      {/* ── Main working area ──────────────────────────── */}
-      <div className="app-body">
-        {/* 80% canvas */}
-        <main className="canvas-area">
-          <CanvasEditor store={store} />
-        </main>
+        {/* Guest scratchpad — no login required */}
+        <Route path="/editor" element={<EditorPage />} />
 
-        {/* 20% right panel (conditionally visible) */}
-        <RightPanel store={store} />
-      </div>
+        {/* Protected routes */}
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <DashboardPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/maps/new"
+          element={
+            <ProtectedRoute>
+              <NewMapPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/maps/:id"
+          element={
+            <ProtectedRoute>
+              <MapEditorPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/maps/:id/versions"
+          element={
+            <ProtectedRoute>
+              <VersionHistoryPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/maps/:id/settings"
+          element={
+            <ProtectedRoute>
+              <MapSettingsPage />
+            </ProtectedRoute>
+          }
+        />
 
-      {/* ── Bottom action bar ──────────────────────────── */}
-      <BottomBar onValidate={handleValidate} onImport={handleImport} />
-    </div>
-    </ConstraintsProvider>
+        {/* Fallback: unknown paths go to the guest editor */}
+        <Route path="*" element={<Navigate to="/editor" replace />} />
+      </Routes>
+    </BrowserRouter>
   );
 }

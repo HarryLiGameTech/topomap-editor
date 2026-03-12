@@ -6,7 +6,13 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:8080',
+        target: 'http://topomap-store.hnrobert.space/',
+        changeOrigin: true,
+      },
+      // Proxy the GitHub OAuth initiation so browser navigation to /auth/github
+      // reaches the backend in development.
+      '/auth': {
+        target: 'http://topomap-store.hnrobert.space/',
         changeOrigin: true,
       },
     },

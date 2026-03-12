@@ -21,7 +21,8 @@ type Action =
   | { type: 'UPDATE_LINE'; payload: Partial<SketchMapEdge> & { id: string } }
   | { type: 'UPDATE_META'; payload: Partial<MapMeta> }
   | { type: 'SET_SELECTION'; selection: Selection }
-  | { type: 'CLEAR_SELECTION' };
+  | { type: 'CLEAR_SELECTION' }
+  | { type: 'LOAD_MAP'; payload: { meta?: Partial<MapMeta>; triangles?: SketchMapNode[]; lines?: SketchMapEdge[] } };
 
 // ──────────────────────────────────────────────────────────────
 // Reducer
@@ -77,6 +78,15 @@ function reducer(state: MapState, action: Action): MapState {
 
     case 'CLEAR_SELECTION':
       return { ...state, selection: { kind: 'none' } };
+
+    case 'LOAD_MAP':
+      return {
+        ...INITIAL_STATE,
+        meta: { ...INITIAL_STATE.meta, ...(action.payload.meta ?? {}) },
+        triangles: action.payload.triangles ?? [],
+        lines: action.payload.lines ?? [],
+        selection: { kind: 'none' },
+      };
 
     default:
       return state;
@@ -202,6 +212,13 @@ export function useMapStore() {
     dispatch({ type: 'UPDATE_META', payload: patch });
   }, []);
 
+  const loadMap = useCallback(
+    (payload: { meta?: Partial<MapMeta>; triangles?: SketchMapNode[]; lines?: SketchMapEdge[] }) => {
+      dispatch({ type: 'LOAD_MAP', payload });
+    },
+    []
+  );
+
   return {
     state,
     addTriangle,
@@ -211,6 +228,7 @@ export function useMapStore() {
     deleteLine,
     updateLine,
     updateMeta,
+    loadMap,
     selectTriangle,
     selectLine,
     clearSelection,

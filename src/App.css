@@ -271,6 +271,337 @@
   width: 100%;
 }
 
+.btn-success {
+  background: #00b894;
+  color: #fff;
+}
+
+.btn-github {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #24292e;
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s;
+  width: 100%;
+  justify-content: center;
+}
+
+.btn-github:hover { background: #1c2126; }
+
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  color: #0984e3;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 6px 0;
+  font-family: inherit;
+  text-decoration: underline;
+}
+
+.btn-link:hover { color: #0770c4; }
+
+/* ════════════════════════════════════════════════════════════
+   Auth / Login page
+   ════════════════════════════════════════════════════════════ */
+
+.auth-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f1f2f6;
+}
+
+.auth-card {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.1);
+  padding: 40px 36px;
+  width: 100%;
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.auth-logo {
+  font-size: 40px;
+  line-height: 1;
+}
+
+.auth-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #2d3436;
+  margin: 0;
+}
+
+.auth-subtitle {
+  font-size: 13px;
+  color: #636e72;
+  text-align: center;
+  margin: 0 0 8px;
+}
+
+/* ════════════════════════════════════════════════════════════
+   Guest banner
+   ════════════════════════════════════════════════════════════ */
+
+.guest-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 8px 20px;
+  background: #fdcb6e;
+  color: #2d3436;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.guest-banner-text {
+  font-weight: 500;
+}
+
+.guest-banner-link {
+  background: none;
+  border: none;
+  color: #0984e3;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.guest-banner-link:hover { color: #0770c4; }
+
+/* ════════════════════════════════════════════════════════════
+   Editor header cloud actions
+   ════════════════════════════════════════════════════════════ */
+
+.header-cloud-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.save-indicator {
+  font-size: 11px;
+  color: rgba(255,255,255,0.7);
+  white-space: nowrap;
+}
+
+/* ════════════════════════════════════════════════════════════
+   Dashboard
+   ════════════════════════════════════════════════════════════ */
+
+.dashboard-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: #f1f2f6;
+}
+
+.dashboard-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 24px;
+  height: 56px;
+  background: #2d3436;
+  color: #fff;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+
+.dashboard-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.user-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.user-name {
+  font-size: 13px;
+  color: rgba(255,255,255,0.85);
+}
+
+.dashboard-main {
+  flex: 1;
+  padding: 28px 32px;
+  max-width: 900px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.dashboard-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.dashboard-section-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #2d3436;
+  margin: 0;
+}
+
+.dashboard-status {
+  color: #636e72;
+  font-size: 14px;
+  margin-top: 20px;
+}
+
+.dashboard-status--error {
+  color: #d63031;
+}
+
+/* ════════════════════════════════════════════════════════════
+   Map list cards
+   ════════════════════════════════════════════════════════════ */
+
+.map-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.map-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+  padding: 14px 18px;
+  gap: 12px;
+}
+
+.map-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  padding: 0;
+  font-family: inherit;
+}
+
+.map-card-info:hover .map-card-title {
+  color: #0984e3;
+}
+
+/* Non-clickable variant (used in version history etc.) */
+.map-card-info--static {
+  cursor: default;
+}
+
+.map-card-info--static:hover .map-card-title {
+  color: inherit;
+}
+
+.map-card-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #2d3436;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color 0.12s;
+}
+
+.map-card-meta {
+  font-size: 12px;
+  color: #636e72;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.map-card-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* Override btn-danger width for card context */
+.map-card-actions .btn-danger {
+  width: auto;
+}
+
+/* ════════════════════════════════════════════════════════════
+   Settings page
+   ════════════════════════════════════════════════════════════ */
+
+.settings-section {
+  margin-bottom: 32px;
+}
+
+.settings-row {
+  display: flex;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.collab-add-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  align-items: center;
+}
+
+.collab-add-row .field-input {
+  flex: 1;
+}
+
+/* ════════════════════════════════════════════════════════════
+   Loading screen
+   ════════════════════════════════════════════════════════════ */
+
+.loading-screen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f1f2f6;
+}
+
+.loading-text {
+  font-size: 15px;
+  color: #636e72;
+}
+
 /* ── Bottom bar ──────────────────────────────────────────── */
 
 .bottom-bar {
