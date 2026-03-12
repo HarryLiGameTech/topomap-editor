@@ -47,6 +47,15 @@ export function EditorPage() {
   const handleValidate = async () => {
     const dsl = convertToDSL(store.state);
     console.warn('[Validate] DSL output:\n' + dsl);
+
+    const blob = new Blob([dsl], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${store.state.meta.mapName}.tmap`;
+    a.click();
+    URL.revokeObjectURL(url);
+
     const result = await sendValidate(dsl, store.state.meta.mapName);
     if (result.status === 'success') {
       console.log('[Validate] Success:', result.message);
