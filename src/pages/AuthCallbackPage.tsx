@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import api from '../api/client';
@@ -9,8 +9,13 @@ export function AuthCallbackPage() {
   const navigate = useNavigate();
   const restoreSession = useAuthStore(s => s.restoreSession);
   const [status, setStatus] = useState('Processing login…');
+  // Guard against React StrictMode double-invocation of the effect
+  const handled = useRef(false);
 
   useEffect(() => {
+    if (handled.current) return;
+    handled.current = true;
+
     const params = new URLSearchParams(window.location.search);
     const token = params.get('token');
 

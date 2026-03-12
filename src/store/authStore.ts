@@ -69,9 +69,12 @@ export const useAuthStore = create<AuthState>((set) => ({
         localStorage.removeItem('jwt');
         set({ user: null, token: null, isGuest: true, isLoading: false });
       }
-    } catch {
-      // Network error — keep guest mode, don't clear a potentially valid token
-      set({ user: null, token: null, isGuest: true, isLoading: false });
+    } catch (err) {
+      console.warn('[restoreSession] Network error:', err);
+      // Network error — backend unreachable. Don't log the user out; keep
+      // whatever state we had before so a transient failure doesn't kick the
+      // user back to /login.
+      set({ isLoading: false });
     }
   },
 }));
