@@ -51,7 +51,7 @@ export function RightPanel({ store }: Props) {
       </aside>
     );
   }
-  if (selection.kind === 'triangles' && selection.ids.length !== 1) return null;
+  if (selection.kind === 'triangles' && selection.ids.length !== 1) return <aside className="right-panel" />;
 
   // ── Triangle panel ────────────────────────────────────────
   if (selection.kind === 'triangles') {
@@ -243,5 +243,5 @@ export function RightPanel({ store }: Props) {
     );
   }
 
-  return null;
+  return <aside className="right-panel" />;
 }

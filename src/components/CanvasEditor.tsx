@@ -5,8 +5,8 @@ import type { MapStore } from '../hooks/useMapStore';
 // ──────────────────────────────────────────────────────────────
 // Drawing constants
 // ──────────────────────────────────────────────────────────────
-const CIRCUMRADIUS = 22;        // triangle circumscribed circle radius (px)
-const HIT_RADIUS   = CIRCUMRADIUS + 10; // px — generous hit zone
+const CIRCUMRADIUS = 16;        // triangle circumscribed circle radius (px)
+const HIT_RADIUS   = CIRCUMRADIUS; // px — matches the visible triangle exactly
 const LINE_HIT_DIST = 8;        // px — how close to click to "hit" a line
 
 // ──────────────────────────────────────────────────────────────
@@ -202,10 +202,10 @@ export function CanvasEditor({ store }: Props) {
     ctx.fillStyle = '#f8f9fa';
     ctx.fillRect(0, 0, w, h);
 
-    // Background image — scale to fill, centred (object-fit: cover)
+    // Background image — scaled to cover 80% of the canvas area, centred
     const bg = bgImageRef.current;
     if (bg) {
-      const scale = Math.max(w / bg.naturalWidth, h / bg.naturalHeight);
+      const scale = Math.max(w / bg.naturalWidth, h / bg.naturalHeight) * 0.8;
       const bw = bg.naturalWidth  * scale;
       const bh = bg.naturalHeight * scale;
       const bx = (w - bw) / 2;
@@ -393,7 +393,7 @@ export function CanvasEditor({ store }: Props) {
           onClick={() => fileInputRef.current?.click()}
           title="Set background image"
         >
-          {bgImage ? '🖼 Change BG' : '🖼 Set BG'}
+          {bgImage ? '🖼 Change Background' : '🖼 Set Background'}
         </button>
         {bgImage && (
           <button
