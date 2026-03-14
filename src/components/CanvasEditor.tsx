@@ -67,7 +67,8 @@ function drawTriangleShape(
   t: SketchMapNode,
   selected: boolean
 ) {
-  const { x, y, color, label } = t;
+  const { x, y, color: assignedColor, label } = t;
+  const color = label.trim() === '' ? '#f39c12' : assignedColor;
   const R = CIRCUMRADIUS;
 
   // Build path
@@ -138,7 +139,7 @@ function drawLineShape(
   ctx.lineTo(to.x, to.y);
 
   ctx.setLineDash(line.style === 'dashed' ? [10, 5] : []);
-  ctx.strokeStyle = selected ? '#0984e3' : '#636e72';
+  ctx.strokeStyle = selected ? '#0984e3' : (line.cost === 0 ? '#f39c12' : '#636e72');
   ctx.lineWidth   = selected ? line.weight + 1 : line.weight;
   ctx.stroke();
   ctx.setLineDash([]);
@@ -205,7 +206,7 @@ export function CanvasEditor({ store }: Props) {
     // Background image — scaled to cover 80% of the canvas area, centred
     const bg = bgImageRef.current;
     if (bg) {
-      const scale = Math.max(w / bg.naturalWidth, h / bg.naturalHeight) * 0.8;
+      const scale = Math.max(w / bg.naturalWidth, h / bg.naturalHeight) * 0.65;
       const bw = bg.naturalWidth  * scale;
       const bh = bg.naturalHeight * scale;
       const bx = (w - bw) / 2;
