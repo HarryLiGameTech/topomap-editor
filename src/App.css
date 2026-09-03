@@ -222,6 +222,99 @@
   font-style: italic;
 }
 
+/* ── Dynamic DSL fields ─────────────────────────────────── */
+
+.dsl-fields-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dsl-fields-header,
+.dsl-field-definition,
+.dsl-list-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dsl-fields-header {
+  justify-content: space-between;
+}
+
+.dsl-field-card {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 9px;
+  border: 1px solid #dfe6e9;
+  border-radius: 7px;
+  background: #f8f9fa;
+}
+
+.dsl-field-definition {
+  flex-wrap: wrap;
+}
+
+.dsl-field-name {
+  min-width: 0;
+  flex: 1 0 100%;
+}
+
+.dsl-field-type {
+  width: auto;
+  min-width: 0;
+  flex: 1;
+}
+
+.dsl-list-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dsl-list-item .field-input,
+.dsl-list-item .field-select {
+  min-width: 0;
+  flex: 1;
+}
+
+.dsl-list-empty {
+  font-size: 12px;
+  color: #b2bec3;
+  font-style: italic;
+}
+
+.btn-field-add,
+.btn-field-action {
+  padding: 5px 8px;
+  background: #dfe6e9;
+  color: #2d3436;
+  font-size: 11px;
+}
+
+.btn-field-action {
+  align-self: flex-start;
+}
+
+.btn-icon-danger {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 5px;
+  flex-shrink: 0;
+  background: #ffe5e5;
+  color: #d63031;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.btn-icon-danger:hover {
+  background: #ffcaca;
+}
+
 .color-swatch {
   display: inline-block;
   width: 18px;

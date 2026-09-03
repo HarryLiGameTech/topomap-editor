@@ -2,6 +2,7 @@ import type { MapStore } from '../hooks/useMapStore';
 import { TRIANGLE_COLORS } from '../types';
 import type { TriangleColor, EdgeStyle } from '../types';
 import { useConstraints } from '../context/ConstraintsContext';
+import { DSLFieldsEditor } from './DSLFieldsEditor';
 
 interface Props {
   store: MapStore;
@@ -117,18 +118,12 @@ export function RightPanel({ store }: Props) {
           <span className="color-swatch" style={{ backgroundColor: tri.color }} />
         </div>
 
-        <div className="field-group">
-          <label className="field-label">Description</label>
-          <textarea
-            className="field-textarea"
-            value={tri.description}
-            placeholder="Additional info (e.g. for pathfinding results)"
-            rows={4}
-            onChange={(e) =>
-              updateTriangle(tri.id, { description: e.target.value })
-            }
-          />
-        </div>
+        <div className="panel-divider" />
+
+        <DSLFieldsEditor
+          fields={tri.dslFields}
+          onChange={(dslFields) => updateTriangle(tri.id, { dslFields })}
+        />
 
         <div className="panel-divider" />
 
@@ -199,21 +194,6 @@ export function RightPanel({ store }: Props) {
         </div>
 
         <div className="field-group">
-          <label className="field-label">Cost (seconds)</label>
-          <input
-            className="field-input"
-            type="number"
-            min={0}
-            step={1}
-            value={line.cost}
-            placeholder="e.g. 120"
-            onChange={(e) =>
-              updateLine(line.id, { cost: Math.max(0, Number(e.target.value)) })
-            }
-          />
-        </div>
-
-        <div className="field-group">
           <label className="field-label">Constraint</label>
           {constraintsLoading ? (
             <p className="field-meta">Loading constraints…</p>
@@ -230,6 +210,14 @@ export function RightPanel({ store }: Props) {
             </select>
           )}
         </div>
+
+        <div className="panel-divider" />
+
+        <DSLFieldsEditor
+          fields={line.dslFields}
+          lockedFieldNames={['cost']}
+          onChange={(dslFields) => updateLine(line.id, { dslFields })}
+        />
 
         <div className="panel-divider" />
 

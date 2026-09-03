@@ -6,6 +6,7 @@ import { CanvasEditor } from '../components/CanvasEditor';
 import { RightPanel } from '../components/RightPanel';
 import { BottomBar } from '../components/BottomBar';
 import { convertToDSL } from '../utils/toDSL';
+import { downloadMapBackup } from '../utils/mapBackup';
 import { sendValidate } from '../api/validate';
 import api from '../api/client';
 
@@ -85,7 +86,13 @@ export function MapEditorPage() {
   };
 
   const handleValidate = async () => {
-    const dsl = convertToDSL(store.state);
+    let dsl: string;
+    try {
+      dsl = convertToDSL(store.state);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : String(error));
+      return;
+    }
     console.warn('[Validate] DSL output:\n' + dsl);
     const result = await sendValidate(dsl, store.state.meta.mapName);
     if (result.status === 'success') {
@@ -98,6 +105,10 @@ export function MapEditorPage() {
   const handleImport = useCallback(() => {
     fileInputRef.current?.click();
   }, []);
+
+  const handleExportJson = useCallback(() => {
+    downloadMapBackup(store.state);
+  }, [store.state]);
 
   const handleFileChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -174,7 +185,11 @@ export function MapEditorPage() {
         </div>
 
         {/* ── Bottom action bar ──────────────────────────── */}
-        <BottomBar onValidate={handleValidate} onImport={handleImport} />
+        <BottomBar
+          onValidate={handleValidate}
+          onExportJson={handleExportJson}
+          onImport={handleImport}
+        />
 
         <input
           ref={fileInputRef}

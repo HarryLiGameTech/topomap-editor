@@ -1,5 +1,19 @@
 import { useReducer, useCallback } from 'react';
-import type { SketchMapNode, SketchMapEdge, Selection, TriangleColor, EdgeStyle, MapMeta } from '../types';
+import type {
+  DSLField,
+  EdgeStyle,
+  MapMeta,
+  Selection,
+  SketchMapEdge,
+  SketchMapNode,
+  TriangleColor,
+} from '../types';
+import {
+  createEdgeDSLFields,
+  createNodeDSLFields,
+  normalizeEdgeDSLFields,
+  normalizeNodeDSLFields,
+} from '../utils/dslFields';
 
 // ──────────────────────────────────────────────────────────────
 // State & Action types
@@ -12,6 +26,12 @@ export interface MapState {
   selection: Selection;
 }
 
+export interface MapLoadPayload {
+  meta?: Partial<MapMeta>;
+  triangles?: unknown[];
+  lines?: unknown[];
+}
+
 type Action =
   | { type: 'ADD_TRIANGLE'; payload: SketchMapNode }
   | { type: 'DELETE_TRIANGLE'; id: string }
@@ -22,7 +42,49 @@ type Action =
   | { type: 'UPDATE_META'; payload: Partial<MapMeta> }
   | { type: 'SET_SELECTION'; selection: Selection }
   | { type: 'CLEAR_SELECTION' }
-  | { type: 'LOAD_MAP'; payload: { meta?: Partial<MapMeta>; triangles?: SketchMapNode[]; lines?: SketchMapEdge[] } };
+  | { type: 'LOAD_MAP'; payload: MapLoadPayload };
+
+function normalizeTriangle(value: unknown): SketchMapNode | null {
+  if (value === null || typeof value !== 'object') return null;
+  const node = value as Record<string, unknown>;
+  if (typeof node.id !== 'string') return null;
+
+  return {
+    id: node.id,
+    x: typeof node.x === 'number' && Number.isFinite(node.x) ? node.x : 0,
+    y: typeof node.y === 'number' && Number.isFinite(node.y) ? node.y : 0,
+    label: typeof node.label === 'string' ? node.label : '',
+    color: typeof node.color === 'string' ? node.color as TriangleColor : '#4a90e2',
+    dslFields: normalizeNodeDSLFields(
+      node.dslFields,
+      typeof node.description === 'string' ? node.description : '',
+    ),
+  };
+}
+
+function normalizeLine(value: unknown): SketchMapEdge | null {
+  if (value === null || typeof value !== 'object') return null;
+  const line = value as Record<string, unknown>;
+  if (
+    typeof line.id !== 'string'
+    || typeof line.fromId !== 'string'
+    || typeof line.toId !== 'string'
+  ) return null;
+
+  return {
+    id: line.id,
+    fromId: line.fromId,
+    toId: line.toId,
+    label: typeof line.label === 'string' ? line.label : '',
+    style: line.style === 'dashed' ? 'dashed' : 'solid',
+    weight: typeof line.weight === 'number' && Number.isFinite(line.weight) ? line.weight : 2,
+    dslFields: normalizeEdgeDSLFields(
+      line.dslFields,
+      typeof line.cost === 'number' && Number.isFinite(line.cost) ? line.cost : 0,
+    ),
+    constraint: typeof line.constraint === 'string' ? line.constraint : '',
+  };
+}
 
 // ──────────────────────────────────────────────────────────────
 // Reducer
@@ -83,8 +145,12 @@ function reducer(state: MapState, action: Action): MapState {
       return {
         ...INITIAL_STATE,
         meta: { ...INITIAL_STATE.meta, ...(action.payload.meta ?? {}) },
-        triangles: action.payload.triangles ?? [],
-        lines: action.payload.lines ?? [],
+        triangles: (action.payload.triangles ?? []).map(normalizeTriangle).filter(
+          (triangle): triangle is SketchMapNode => triangle !== null,
+        ),
+        lines: (action.payload.lines ?? []).map(normalizeLine).filter(
+          (line): line is SketchMapEdge => line !== null,
+        ),
         selection: { kind: 'none' },
       };
 
@@ -127,7 +193,7 @@ export function useMapStore() {
       y,
       label: '',
       color: '#4a90e2',
-      description: '',
+      dslFields: createNodeDSLFields(),
     };
     dispatch({ type: 'ADD_TRIANGLE', payload: triangle });
   }, []);
@@ -137,7 +203,7 @@ export function useMapStore() {
   }, []);
 
   const updateTriangle = useCallback(
-    (id: string, patch: { label?: string; color?: TriangleColor; x?: number; y?: number; description?: string }) => {
+    (id: string, patch: { label?: string; color?: TriangleColor; x?: number; y?: number; dslFields?: DSLField[] }) => {
       dispatch({ type: 'UPDATE_TRIANGLE', payload: { id, ...patch } });
     },
     []
@@ -153,7 +219,7 @@ export function useMapStore() {
       label: '',
       style: 'solid',
       weight: 2,
-      cost: 0,
+      dslFields: createEdgeDSLFields(),
       constraint: '',
     };
     dispatch({ type: 'ADD_LINE', payload: line });
@@ -164,7 +230,7 @@ export function useMapStore() {
   }, []);
 
   const updateLine = useCallback(
-    (id: string, patch: { label?: string; style?: EdgeStyle; weight?: number; cost?: number; constraint?: string }) => {
+    (id: string, patch: { label?: string; style?: EdgeStyle; weight?: number; dslFields?: DSLField[]; constraint?: string }) => {
       dispatch({ type: 'UPDATE_LINE', payload: { id, ...patch } });
     },
     []
@@ -220,7 +286,7 @@ export function useMapStore() {
   }, []);
 
   const loadMap = useCallback(
-    (payload: { meta?: Partial<MapMeta>; triangles?: SketchMapNode[]; lines?: SketchMapEdge[] }) => {
+    (payload: MapLoadPayload) => {
       dispatch({ type: 'LOAD_MAP', payload });
     },
     []

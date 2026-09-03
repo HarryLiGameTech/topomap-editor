@@ -6,6 +6,7 @@ import { RightPanel } from '../components/RightPanel';
 import { BottomBar } from '../components/BottomBar';
 import { GuestBanner } from '../components/GuestBanner';
 import { convertToDSL } from '../utils/toDSL';
+import { downloadMapBackup } from '../utils/mapBackup';
 import { sendValidate } from '../api/validate';
 
 const DRAFT_KEY = 'guest-map-draft';
@@ -45,7 +46,13 @@ export function EditorPage() {
   }, [store.state.meta, store.state.triangles, store.state.lines]);
 
   const handleValidate = async () => {
-    const dsl = convertToDSL(store.state);
+    let dsl: string;
+    try {
+      dsl = convertToDSL(store.state);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : String(error));
+      return;
+    }
     console.warn('[Validate] DSL output:\n' + dsl);
 
     const blob = new Blob([dsl], { type: 'text/plain' });
@@ -67,6 +74,10 @@ export function EditorPage() {
   const handleImport = useCallback(() => {
     fileInputRef.current?.click();
   }, []);
+
+  const handleExportJson = useCallback(() => {
+    downloadMapBackup(store.state);
+  }, [store.state]);
 
   const handleFileChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -111,7 +122,11 @@ export function EditorPage() {
         </div>
 
         {/* ── Bottom action bar ──────────────────────────── */}
-        <BottomBar onValidate={handleValidate} onImport={handleImport} />
+        <BottomBar
+          onValidate={handleValidate}
+          onExportJson={handleExportJson}
+          onImport={handleImport}
+        />
 
         <input
           ref={fileInputRef}

@@ -1,13 +1,14 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import type { SketchMapNode, SketchMapEdge, Selection } from '../types';
 import type { MapStore } from '../hooks/useMapStore';
+import { getNumberDSLField } from '../utils/dslFields';
 
 // ──────────────────────────────────────────────────────────────
 // Drawing constants
 // ──────────────────────────────────────────────────────────────
-const CIRCUMRADIUS = 16;        // triangle circumscribed circle radius (px)
+const CIRCUMRADIUS = 10;        // triangle circumscribed circle radius (px)
 const HIT_RADIUS   = CIRCUMRADIUS; // px — matches the visible triangle exactly
-const LINE_HIT_DIST = 8;        // px — how close to click to "hit" a line
+const LINE_HIT_DIST = 6;        // px — how close to click to "hit" a line
 
 // ──────────────────────────────────────────────────────────────
 // Helper: geometry
@@ -139,7 +140,8 @@ function drawLineShape(
   ctx.lineTo(to.x, to.y);
 
   ctx.setLineDash(line.style === 'dashed' ? [10, 5] : []);
-  ctx.strokeStyle = selected ? '#0984e3' : (line.cost === 0 ? '#f39c12' : '#636e72');
+  const cost = getNumberDSLField(line.dslFields, 'cost') ?? 0;
+  ctx.strokeStyle = selected ? '#0984e3' : (cost === 0 ? '#f39c12' : '#636e72');
   ctx.lineWidth   = selected ? line.weight + 1 : line.weight;
   ctx.stroke();
   ctx.setLineDash([]);

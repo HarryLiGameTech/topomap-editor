@@ -19,6 +19,28 @@ export const TRIANGLE_COLORS: TriangleColor[] = [
 
 export type EdgeStyle = 'solid' | 'dashed';
 
+export type DSLFieldType =
+  | 'string'
+  | 'number'
+  | 'boolean'
+  | 'string-list'
+  | 'number-list'
+  | 'boolean-list';
+
+interface DSLFieldBase {
+  /** Stable editor-only identity. The DSL uses `name`, not this id. */
+  id: string;
+  name: string;
+}
+
+export type DSLField =
+  | (DSLFieldBase & { type: 'string'; value: string })
+  | (DSLFieldBase & { type: 'number'; value: number })
+  | (DSLFieldBase & { type: 'boolean'; value: boolean })
+  | (DSLFieldBase & { type: 'string-list'; value: string[] })
+  | (DSLFieldBase & { type: 'number-list'; value: number[] })
+  | (DSLFieldBase & { type: 'boolean-list'; value: boolean[] });
+
 export interface MapMeta {
   mapName: string;      // used as the topo-map identifier in DSL
   permResident: number; // permanent resident count passed as DSL param
@@ -30,7 +52,7 @@ export interface SketchMapNode {
   y: number;
   label: string;
   color: TriangleColor;
-  description: string; // optional longer text description, used for additional info for pathfinding results
+  dslFields: DSLField[];
 }
 
 export interface SketchMapEdge {
@@ -40,7 +62,7 @@ export interface SketchMapEdge {
   label: string;
   style: EdgeStyle;
   weight: number; // 1–10, affects line thickness
-  cost: number;   // non-negative, in seconds, used for pathfinding algorithms
+  dslFields: DSLField[];
   constraint: string; // optional additional constraint for pathfinding algorithms
 }
 

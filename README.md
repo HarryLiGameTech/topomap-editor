@@ -66,6 +66,7 @@ The panel appears automatically when exactly **one** node or edge is selected.
 | Label | Free-text name displayed below the node |
 | Position X / Y | Numeric coordinates (editable directly) |
 | Color | Choose from 5 preset colours |
+| DSL fields | Add any number of String, Number, Bool, or homogeneous List fields |
 | Delete Node | Removes the node and all its connected edges |
 
 **Edge properties**
@@ -76,7 +77,10 @@ The panel appears automatically when exactly **one** node or edge is selected.
 | From → To | Read-only display of the connected nodes |
 | Style | `Solid` or `Dashed` line rendering |
 | Weight | Thickness slider (1 – 10) |
+| DSL fields | Add any number of String, Number, Bool, or homogeneous List fields |
 | Delete Edge | Removes only this edge |
+
+New nodes start with `displayName`, `shopName`, `description`, and `tags: List[String]` DSL fields. New edges start with a required numeric `cost` field. DSL field names must be unique valid identifiers containing letters, digits, or underscores and cannot start with a digit.
 
 ### Bottom bar
 
