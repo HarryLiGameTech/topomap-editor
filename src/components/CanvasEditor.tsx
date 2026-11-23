@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
-import type { SketchMapNode, SketchMapEdge, Selection } from '../types';
+import type { SketchMapNode, SketchMapEdge } from '../types';
 import type { MapStore } from '../hooks/useMapStore';
 import { getNumberDSLField } from '../utils/dslFields';
 
@@ -13,6 +13,37 @@ const LINE_HIT_DIST = 6;        // px — how close to click to "hit" a line
 // ──────────────────────────────────────────────────────────────
 // Helper: geometry
 // ──────────────────────────────────────────────────────────────
+
+interface Point { x: number; y: number }
+
+interface SelectionDrag {
+  pointerId: number;
+  start: Point;
+  additive: boolean;
+  dragging: boolean;
+}
+
+function canvasPoint(event: React.PointerEvent<HTMLCanvasElement>): Point {
+  const bounds = event.currentTarget.getBoundingClientRect();
+  return {
+    x: Math.max(0, Math.min(bounds.width, event.clientX - bounds.left)),
+    y: Math.max(0, Math.min(bounds.height, event.clientY - bounds.top)),
+  };
+}
+
+function selectionBox(start: Point, end: Point) {
+  return {
+    left: Math.min(start.x, end.x),
+    top: Math.min(start.y, end.y),
+    width: Math.abs(end.x - start.x),
+    height: Math.abs(end.y - start.y),
+  };
+}
+
+const DRAG_THRESHOLD = 5;
+function isDrag(gesture: SelectionDrag, end: Point) {
+  return gesture.dragging || Math.hypot(end.x - gesture.start.x, end.y - gesture.start.y) >= DRAG_THRESHOLD;
+}
 
 function distToSegment(
   px: number, py: number,
@@ -171,14 +202,12 @@ export function CanvasEditor({ store }: Props) {
   const canvasRef   = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const dragRef = useRef<SelectionDrag | null>(null);
+  const [box, setBox] = useState<ReturnType<typeof selectionBox> | null>(null);
+
   // Background image — local state, not part of map data
   const [bgImage, setBgImage] = useState<HTMLImageElement | null>(null);
-  const bgImageRef = useRef<HTMLImageElement | null>(null);
-  bgImageRef.current = bgImage;
-
-  // Keep a ref to current state so event handlers don't become stale
-  const stateRef = useRef(state);
-  stateRef.current = state;
+  const [overlayOpacity, setOverlayOpacity] = useState(0);
 
   // ── Draw ──────────────────────────────────────────────────
 
@@ -206,7 +235,7 @@ export function CanvasEditor({ store }: Props) {
     ctx.fillRect(0, 0, w, h);
 
     // Background image — scaled to cover 80% of the canvas area, centred
-    const bg = bgImageRef.current;
+    const bg = bgImage;
     if (bg) {
       const scale = Math.max(w / bg.naturalWidth, h / bg.naturalHeight) * 0.65;
       const bw = bg.naturalWidth  * scale;
@@ -216,9 +245,14 @@ export function CanvasEditor({ store }: Props) {
       ctx.drawImage(bg, bx, by, bw, bh);
     }
 
-    drawGrid(ctx, w, h);
+    if (!bg || overlayOpacity > 0) {
+      ctx.save();
+      ctx.globalAlpha = bg ? overlayOpacity / 100 : 1;
+      drawGrid(ctx, w, h);
+      ctx.restore();
+    }
 
-    const { triangles, lines, selection } = stateRef.current;
+    const { triangles, lines, selection } = state;
 
     // Draw edges first (behind nodes)
     for (const line of lines) {
@@ -227,10 +261,9 @@ export function CanvasEditor({ store }: Props) {
     }
 
     // Draw triangles on top
+    const selectedIds = new Set(selection.kind === 'triangles' ? selection.ids : []);
     for (const tri of triangles) {
-      const isSelected =
-        selection.kind === 'triangles' && selection.ids.includes(tri.id);
-      drawTriangleShape(ctx, tri, isSelected);
+      drawTriangleShape(ctx, tri, selectedIds.has(tri.id));
     }
 
     // Connection hint: if 2 triangles are selected, draw a dashed preview
@@ -258,21 +291,21 @@ export function CanvasEditor({ store }: Props) {
     }
 
     ctx.restore();
-  }, []); // stable — reads from stateRef
+  }, [bgImage, overlayOpacity, state]);
 
-  // Re-draw whenever state changes
+  const drawRef = useRef(draw);
   useEffect(() => {
+    drawRef.current = draw;
     draw();
-  });
+  }, [draw]);
 
-  // Resize observer
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ro = new ResizeObserver(draw);
+    const ro = new ResizeObserver(() => drawRef.current());
     ro.observe(canvas);
     return () => ro.disconnect();
-  }, [draw]);
+  }, []);
 
   // ── Background image upload ───────────────────────────────
 
@@ -292,82 +325,108 @@ export function CanvasEditor({ store }: Props) {
 
   const handleClearBg = useCallback(() => setBgImage(null), []);
 
-  // ── Mouse event helpers ───────────────────────────────────
+  const clickAt = ({ x, y }: Point, additive: boolean) => {
+    const { triangles, lines, selection } = state;
+    for (let i = triangles.length - 1; i >= 0; i--) {
+      if (hitTestTriangle(triangles[i], x, y)) {
+        selectTriangle(triangles[i].id, additive);
+        return;
+      }
+    }
+    if (additive) return;
 
-  const getCanvasPos = (e: MouseEvent): { x: number; y: number } => {
-    const canvas = canvasRef.current!;
-    const rect   = canvas.getBoundingClientRect();
-    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    for (let i = lines.length - 1; i >= 0; i--) {
+      if (hitTestLine(lines[i], triangles, x, y)) {
+        selectLine(lines[i].id);
+        return;
+      }
+    }
+    if (selection.kind === 'none' || (selection.kind === 'triangles' && selection.naming)) addTriangle(x, y);
+    else clearSelection();
   };
 
-  // ── Event listeners ───────────────────────────────────────
-
-  useEffect(() => {
+  const cancelDrag = useCallback(() => {
+    const gesture = dragRef.current;
+    if (!gesture) return;
+    dragRef.current = null;
+    setBox(null);
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (canvas?.hasPointerCapture(gesture.pointerId)) canvas.releasePointerCapture(gesture.pointerId);
+  }, []);
 
-    // Prevent browser context menu
-    const onContextMenu = (e: MouseEvent) => e.preventDefault();
+  const handlePointerDown = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    if (!event.isPrimary || dragRef.current) return;
+    const canvas = event.currentTarget;
+    const additive = event.ctrlKey || event.metaKey;
+    event.preventDefault();
+    canvas.focus({ preventScroll: true });
 
-    const onMouseDown = (e: MouseEvent) => {
-      const { x, y } = getCanvasPos(e);
-      const { triangles, lines, selection } = stateRef.current;
+    // macOS may report Control-click as a secondary click.
+    if (event.button === 0 || (event.button === 2 && event.ctrlKey)) {
+      dragRef.current = { pointerId: event.pointerId, start: canvasPoint(event), additive, dragging: false };
+      canvas.setPointerCapture(event.pointerId);
+      return;
+    }
+    const { selection } = state;
+    if (event.button === 2 && !additive && selection.kind === 'triangles' && selection.ids.length === 2) {
+      addLine(selection.ids[0], selection.ids[1]);
+      clearSelection();
+    }
+  };
 
-      if (e.button === 0) {
-        // ── Left click ────────────────────────────────────
+  const handlePointerMove = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    const gesture = dragRef.current;
+    if (gesture?.pointerId !== event.pointerId) return;
+    const end = canvasPoint(event);
+    if (isDrag(gesture, end)) {
+      gesture.dragging = true;
+      setBox(selectionBox(gesture.start, end));
+    }
+  };
 
-        // 1. Hit-test triangles (front-to-back)
-        for (let i = triangles.length - 1; i >= 0; i--) {
-          if (hitTestTriangle(triangles[i], x, y)) {
-            selectTriangle(triangles[i].id);
-            return;
-          }
-        }
-
-        // 2. Hit-test lines
-        for (let i = lines.length - 1; i >= 0; i--) {
-          if (hitTestLine(lines[i], triangles, x, y)) {
-            selectLine(lines[i].id);
-            return;
-          }
-        }
-
-        // 3. Clicked on empty space
-        if (selection.kind !== 'none') {
-          // Deselect
-          clearSelection();
-        } else {
-          // Create new triangle at click position
-          addTriangle(x, y);
-        }
-
-      } else if (e.button === 2) {
-        // ── Right click ───────────────────────────────────
-        if (selection.kind === 'triangles' && selection.ids.length === 2) {
-          addLine(selection.ids[0], selection.ids[1]);
-          clearSelection();
-        }
+  const handlePointerUp = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    const gesture = dragRef.current;
+    if (gesture?.pointerId !== event.pointerId) return;
+    const end = canvasPoint(event);
+    cancelDrag();
+    if (!isDrag(gesture, end)) {
+      clickAt(gesture.start, gesture.additive);
+      return;
+    }
+    const { left, top, width, height } = selectionBox(gesture.start, end);
+    const { selection, triangles } = state;
+    const ids = new Set(gesture.additive && selection.kind === 'triangles' ? selection.ids : []);
+    for (const node of triangles) {
+      if (node.x >= left && node.x <= left + width && node.y >= top && node.y <= top + height) {
+        ids.add(node.id);
       }
-    };
+    }
+    store.selectTriangles([...ids]);
+  };
 
-    canvas.addEventListener('contextmenu', onContextMenu);
-    canvas.addEventListener('mousedown',   onMouseDown);
-
-    return () => {
-      canvas.removeEventListener('contextmenu', onContextMenu);
-      canvas.removeEventListener('mousedown',   onMouseDown);
-    };
-  }, [addTriangle, selectTriangle, selectLine, clearSelection, addLine]);
+  const handleCanvasKey = (event: React.KeyboardEvent<HTMLCanvasElement>) => {
+    if (dragRef.current) return;
+    if (event.key !== 'Delete' && event.key !== 'Backspace') return;
+    if (state.selection.kind !== 'triangles') return;
+    event.preventDefault();
+    store.deleteTriangles(state.selection.ids);
+  };
 
   // ── Keyboard: Escape deselects ────────────────────────────
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') clearSelection();
+      if (e.key !== 'Escape') return;
+      if (dragRef.current) cancelDrag();
+      else clearSelection();
     };
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [clearSelection]);
+    window.addEventListener('blur', cancelDrag);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener('blur', cancelDrag);
+    };
+  }, [clearSelection, cancelDrag]);
 
   // ── Render ────────────────────────────────────────────────
 
@@ -378,9 +437,24 @@ export function CanvasEditor({ store }: Props) {
     <div className="canvas-wrapper">
       <canvas
         ref={canvasRef}
+        tabIndex={0}
+        aria-label="Map drawing canvas"
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onLostPointerCapture={(event) => {
+          if (dragRef.current?.pointerId === event.pointerId) cancelDrag();
+        }}
+        onPointerCancel={(event) => {
+          if (dragRef.current?.pointerId === event.pointerId) cancelDrag();
+        }}
+        onContextMenu={(event) => event.preventDefault()}
+        onKeyDown={handleCanvasKey}
         className="map-canvas"
         style={{ display: 'block', width: '100%', height: '100%', cursor: 'crosshair' }}
       />
+
+      {box && <div className="selection-box" style={box} aria-hidden="true" />}
 
       {/* ── Background image controls ─────────────────── */}
       <div className="canvas-controls">
@@ -399,25 +473,37 @@ export function CanvasEditor({ store }: Props) {
           {bgImage ? '🖼 Change Background' : '🖼 Set Background'}
         </button>
         {bgImage && (
-          <button
-            className="btn btn-canvas-ctrl btn-canvas-ctrl--clear"
-            onClick={handleClearBg}
-            title="Remove background image"
-          >
-            ✕ Clear BG
-          </button>
+          <>
+            <button
+              className="btn btn-canvas-ctrl btn-canvas-ctrl--clear"
+              onClick={handleClearBg}
+              title="Remove background image"
+            >
+              ✕ Clear BG
+            </button>
+            <label className="grid-opacity">
+              Grid
+              <input type="range" aria-label="Grid opacity" min="0" max="100"
+                value={overlayOpacity} onChange={(event) => setOverlayOpacity(Number(event.target.value))} />
+              <output>{overlayOpacity}%</output>
+            </label>
+          </>
         )}
       </div>
       <div className="canvas-hint">
         {state.selection.kind === 'none' && (
-          <span>Left-click on empty space to place a node · Click a node to select it</span>
+          <span>Click to place a node · Drag to select nodes · Ctrl/⌘-drag to add</span>
         )}
-        {state.selection.kind === 'triangles' && selCount === 1 && (
-          <span>1 node selected · Click another node to also select it, or edit in the right panel</span>
+        {state.selection.kind === 'triangles' && state.selection.naming && (
+          <span>Type a name · Click empty space for the next node · Esc to finish</span>
+        )}
+        {state.selection.kind === 'triangles' && !state.selection.naming && selCount === 1 && (
+          <span>1 node selected · Ctrl/⌘-click to add or remove nodes · Delete to remove selection</span>
         )}
         {state.selection.kind === 'triangles' && selCount === 2 && (
-          <span>2 nodes selected · <strong>Right-click</strong> to connect them with an edge</span>
+          <span>2 nodes selected · <strong>Right-click</strong> to connect · Delete to remove both</span>
         )}
+        {selCount > 2 && <span>{selCount} nodes selected · Delete to remove · Esc to clear selection</span>}
         {state.selection.kind === 'line' && (
           <span>Edge selected · Edit properties in the right panel</span>
         )}
