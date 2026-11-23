@@ -3,17 +3,20 @@ import type {
   DSLField,
   EdgeStyle,
   MapMeta,
+  NodeNamingMode,
   Selection,
   SketchMapEdge,
   SketchMapNode,
   TriangleColor,
 } from '../types';
 import {
-  createEdgeDSLFields,
   createNodeDSLFields,
   normalizeEdgeDSLFields,
   normalizeNodeDSLFields,
 } from '../utils/dslFields';
+
+import { connectRoomPairs, createMapEdge, matchedRoomEndpoints, sameEndpoints } from '../utils/roomConnections';
+import { nextTemplate, readNodeTemplate, templateLabel } from '../utils/nodeNaming';
 
 // ──────────────────────────────────────────────────────────────
 // State & Action types
@@ -24,6 +27,7 @@ export interface MapState {
   triangles: SketchMapNode[];
   lines: SketchMapEdge[];
   selection: Selection;
+  nodeNamingMode: NodeNamingMode;
 }
 
 export interface MapLoadPayload {
@@ -33,8 +37,10 @@ export interface MapLoadPayload {
 }
 
 type Action =
-  | { type: 'ADD_TRIANGLE'; payload: SketchMapNode }
-  | { type: 'DELETE_TRIANGLE'; id: string }
+  | { type: 'ADD_TRIANGLE'; payload: Omit<SketchMapNode, 'label' | 'template'> }
+  | { type: 'SET_NODE_MODE'; mode: NodeNamingMode; id?: string }
+  | { type: 'SELECT_TRIANGLE'; id: string; additive: boolean }
+  | { type: 'DELETE_TRIANGLES'; ids: string[] }
   | { type: 'UPDATE_TRIANGLE'; payload: Partial<SketchMapNode> & { id: string } }
   | { type: 'ADD_LINE'; payload: SketchMapEdge }
   | { type: 'DELETE_LINE'; id: string }
@@ -49,11 +55,15 @@ function normalizeTriangle(value: unknown): SketchMapNode | null {
   const node = value as Record<string, unknown>;
   if (typeof node.id !== 'string') return null;
 
+  const label = typeof node.label === 'string' ? node.label : '';
   return {
     id: node.id,
     x: typeof node.x === 'number' && Number.isFinite(node.x) ? node.x : 0,
     y: typeof node.y === 'number' && Number.isFinite(node.y) ? node.y : 0,
-    label: typeof node.label === 'string' ? node.label : '',
+    label,
+    template: readNodeTemplate(node.template, label),
+    skippedRoomPartnerIds: Array.isArray(node.skippedRoomPartnerIds)
+      ? node.skippedRoomPartnerIds.filter((id): id is string => typeof id === 'string') : undefined,
     color: typeof node.color === 'string' ? node.color as TriangleColor : '#4a90e2',
     dslFields: normalizeNodeDSLFields(
       node.dslFields,
@@ -73,6 +83,7 @@ function normalizeLine(value: unknown): SketchMapEdge | null {
 
   return {
     id: line.id,
+    autoRoomConnection: line.autoRoomConnection === true ? true : undefined,
     fromId: line.fromId,
     toId: line.toId,
     label: typeof line.label === 'string' ? line.label : '',
@@ -90,21 +101,58 @@ function normalizeLine(value: unknown): SketchMapEdge | null {
 // Reducer
 // ──────────────────────────────────────────────────────────────
 
-function reducer(state: MapState, action: Action): MapState {
+function applyAction(state: MapState, action: Action): MapState {
   switch (action.type) {
-    case 'ADD_TRIANGLE':
-      return { ...state, triangles: [...state.triangles, action.payload] };
-
-    case 'DELETE_TRIANGLE':
+    case 'ADD_TRIANGLE': {
+      const template = nextTemplate(state.nodeNamingMode, state.triangles);
+      const node = { ...action.payload, template, label: templateLabel(template) };
       return {
         ...state,
-        triangles: state.triangles.filter((t) => t.id !== action.id),
-        // Remove any edge that references the deleted triangle
-        lines: state.lines.filter(
-          (l) => l.fromId !== action.id && l.toId !== action.id
+        triangles: [...state.triangles, node],
+        selection: { kind: 'triangles', ids: [node.id], naming: true },
+      };
+    }
+
+    case 'SET_NODE_MODE': {
+      if (!action.id) return { ...state, nodeNamingMode: action.mode };
+      const index = state.triangles.findIndex((node) => node.id === action.id);
+      if (index < 0) return state;
+      const template = nextTemplate(action.mode, state.triangles, index);
+      return {
+        ...state,
+        nodeNamingMode: action.mode,
+        triangles: state.triangles.map((node, i) =>
+          i === index ? { ...node, template, label: templateLabel(template, node) } : node
         ),
+        selection: { kind: 'triangles', ids: [action.id], naming: true },
+      };
+    }
+
+    case 'SELECT_TRIANGLE': {
+      const selection = state.selection;
+      // An ordinary click after typing starts a fresh selection for connecting nodes.
+      const current = selection.kind === 'triangles' && (!selection.naming || action.additive)
+        ? selection.ids : [];
+      let ids: string[];
+      if (current.includes(action.id)) {
+        ids = current.filter((id) => id !== action.id);
+      } else if (action.additive || current.length < 2) {
+        ids = [...current, action.id];
+      } else {
+        ids = [action.id];
+      }
+      return { ...state, selection: ids.length ? { kind: 'triangles', ids } : { kind: 'none' } };
+    }
+
+    case 'DELETE_TRIANGLES': {
+      const removed = new Set(action.ids);
+      return {
+        ...state,
+        triangles: state.triangles.filter((node) => !removed.has(node.id)),
+        lines: state.lines.filter((edge) => !removed.has(edge.fromId) && !removed.has(edge.toId)),
         selection: { kind: 'none' },
       };
+    }
 
     case 'UPDATE_TRIANGLE':
       return {
@@ -115,14 +163,25 @@ function reducer(state: MapState, action: Action): MapState {
       };
 
     case 'ADD_LINE':
+      if (state.lines.some((line) => line.autoRoomConnection && sameEndpoints(line, action.payload.fromId, action.payload.toId))) return state;
       return { ...state, lines: [...state.lines, action.payload] };
 
-    case 'DELETE_LINE':
+    case 'DELETE_LINE': {
+      const removed = state.lines.find((line) => line.id === action.id);
+      if (!removed) return state;
+      const from = state.triangles.find((node) => node.id === removed.fromId);
+      const to = state.triangles.find((node) => node.id === removed.toId);
+      const suppress = matchedRoomEndpoints(from, to) && !from?.skippedRoomPartnerIds?.includes(removed.toId);
       return {
         ...state,
-        lines: state.lines.filter((l) => l.id !== action.id),
+        // Remember explicit removal so a matching room pair stays disconnected after reload.
+        triangles: suppress ? state.triangles.map((node) => node === from
+          ? { ...node, skippedRoomPartnerIds: [...(node.skippedRoomPartnerIds ?? []), removed.toId] }
+          : node) : state.triangles,
+        lines: state.lines.filter((line) => line.id !== action.id),
         selection: { kind: 'none' },
       };
+    }
 
     case 'UPDATE_LINE':
       return {
@@ -159,11 +218,22 @@ function reducer(state: MapState, action: Action): MapState {
   }
 }
 
+function reducer(state: MapState, action: Action): MapState {
+  const next = applyAction(state, action);
+  if (action.type === 'LOAD_MAP' || action.type === 'DELETE_TRIANGLES' ||
+      (action.type === 'SET_NODE_MODE' && action.id) ||
+      (action.type === 'UPDATE_TRIANGLE' && action.payload.label !== undefined)) {
+    return { ...next, lines: connectRoomPairs(next.triangles, next.lines) };
+  }
+  return next;
+}
+
 // ──────────────────────────────────────────────────────────────
 // Public hook
 // ──────────────────────────────────────────────────────────────
 
 const INITIAL_STATE: MapState = {
+  nodeNamingMode: 'room',
   meta: { mapName: 'ExampleMap', permResident: 120 },
   triangles: [],
   lines: [],
@@ -187,19 +257,22 @@ export function useMapStore() {
   // ── Triangle actions ──────────────────────────────────────
 
   const addTriangle = useCallback((x: number, y: number) => {
-    const triangle: SketchMapNode = {
+    const triangle = {
       id: uid(),
       x,
       y,
-      label: '',
-      color: '#4a90e2',
+      color: '#4a90e2' as const,
       dslFields: createNodeDSLFields(),
     };
     dispatch({ type: 'ADD_TRIANGLE', payload: triangle });
   }, []);
 
-  const deleteTriangle = useCallback((id: string) => {
-    dispatch({ type: 'DELETE_TRIANGLE', id });
+  const setNodeNamingMode = useCallback((mode: NodeNamingMode, id?: string) => {
+    dispatch({ type: 'SET_NODE_MODE', mode, id });
+  }, []);
+
+  const deleteTriangles = useCallback((ids: string[]) => {
+    dispatch({ type: 'DELETE_TRIANGLES', ids });
   }, []);
 
   const updateTriangle = useCallback(
@@ -212,16 +285,7 @@ export function useMapStore() {
   // ── Line actions ──────────────────────────────────────────
 
   const addLine = useCallback((fromId: string, toId: string) => {
-    const line: SketchMapEdge = {
-      id: uid(),
-      fromId,
-      toId,
-      label: '',
-      style: 'solid',
-      weight: 2,
-      dslFields: createEdgeDSLFields(),
-      constraint: '',
-    };
+    const line = createMapEdge(uid(), fromId, toId);
     dispatch({ type: 'ADD_LINE', payload: line });
   }, []);
 
@@ -238,40 +302,13 @@ export function useMapStore() {
 
   // ── Selection actions ─────────────────────────────────────
 
-  const selectTriangle = useCallback(
-    (id: string) => {
-      const current = state.selection;
+  const selectTriangle = useCallback((id: string, additive = false) => {
+    dispatch({ type: 'SELECT_TRIANGLE', id, additive });
+  }, []);
 
-      if (current.kind === 'triangles') {
-        if (current.ids.includes(id)) {
-          // Deselect this triangle
-          const next = current.ids.filter((i) => i !== id);
-          dispatch({
-            type: 'SET_SELECTION',
-            selection: next.length === 0 ? { kind: 'none' } : { kind: 'triangles', ids: next },
-          });
-        } else if (current.ids.length < 2) {
-          // Add to selection (max 2 for edge creation)
-          dispatch({
-            type: 'SET_SELECTION',
-            selection: { kind: 'triangles', ids: [...current.ids, id] },
-          });
-        } else {
-          // Already 2 selected → replace selection with just this triangle
-          dispatch({
-            type: 'SET_SELECTION',
-            selection: { kind: 'triangles', ids: [id] },
-          });
-        }
-      } else {
-        dispatch({
-          type: 'SET_SELECTION',
-          selection: { kind: 'triangles', ids: [id] },
-        });
-      }
-    },
-    [state.selection]
-  );
+  const selectTriangles = useCallback((ids: string[]) => {
+    dispatch({ type: 'SET_SELECTION', selection: ids.length ? { kind: 'triangles', ids } : { kind: 'none' } });
+  }, []);
 
   const selectLine = useCallback((id: string) => {
     dispatch({ type: 'SET_SELECTION', selection: { kind: 'line', id } });
@@ -295,7 +332,8 @@ export function useMapStore() {
   return {
     state,
     addTriangle,
-    deleteTriangle,
+    setNodeNamingMode,
+    deleteTriangles,
     updateTriangle,
     addLine,
     deleteLine,
@@ -303,6 +341,7 @@ export function useMapStore() {
     updateMeta,
     loadMap,
     selectTriangle,
+    selectTriangles,
     selectLine,
     clearSelection,
   };

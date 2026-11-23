@@ -46,7 +46,12 @@ export interface MapMeta {
   permResident: number; // permanent resident count passed as DSL param
 }
 
+export type NodeNamingMode = 'room' | 'elevator' | 'staircase' | 'custom';
+export type NodeTemplate = 'inside' | 'outside' | 'staircaseOutside' | Exclude<NodeNamingMode, 'room'>;
+
 export interface SketchMapNode {
+  template: NodeTemplate;
+  skippedRoomPartnerIds?: string[];
   id: string;
   x: number;
   y: number;
@@ -56,6 +61,7 @@ export interface SketchMapNode {
 }
 
 export interface SketchMapEdge {
+  autoRoomConnection?: true;
   id: string;
   fromId: string;
   toId: string;
@@ -72,5 +78,5 @@ export interface SketchMapEdge {
 
 export type Selection =
   | { kind: 'none' }
-  | { kind: 'triangles'; ids: string[] }   // 1 or 2 triangle ids
+  | { kind: 'triangles'; ids: string[]; naming?: true }   // one or more selected node ids
   | { kind: 'line'; id: string };

@@ -78,8 +78,8 @@ export function createNodeDSLFields(description = ''): DSLField[] {
   ];
 }
 
-export function createEdgeDSLFields(cost = 0): DSLField[] {
-  return [{ ...createDSLField('cost', 'number'), value: cost }];
+export function createEdgeDSLFields(cost = 0, id?: string): DSLField[] {
+  return [{ ...createDSLField('cost', 'number', id), value: cost }];
 }
 
 function normalizeField(value: unknown): DSLField | null {

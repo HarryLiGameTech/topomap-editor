@@ -72,6 +72,14 @@
   height: 100%;
 }
 
+.selection-box {
+  position: absolute;
+  pointer-events: none;
+  box-sizing: border-box;
+  border: 1px solid #087ac1;
+  background: rgba(9, 132, 227, 0.14);
+}
+
 /* Hint bar at bottom of canvas */
 .canvas-hint {
   position: absolute;
@@ -95,8 +103,26 @@
   left: 10px;
   display: flex;
   gap: 6px;
+  right: 10px;
+  width: fit-content;
+  max-width: calc(100% - 20px);
+  flex-wrap: wrap;
   z-index: 5;
 }
+
+.grid-opacity {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: #454b4e;
+  color: white;
+  border-radius: 8px;
+  font-size: 12px;
+}
+
+.grid-opacity input { width: 76px; }
+.grid-opacity output { min-width: 4ch; text-align: right; }
 
 .btn-canvas-ctrl {
   background: rgba(45, 52, 54, 0.72);

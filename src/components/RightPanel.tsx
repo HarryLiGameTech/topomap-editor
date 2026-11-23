@@ -1,6 +1,8 @@
+import { useLayoutEffect, useRef } from 'react';
+import { nameCaret, namingMode } from '../utils/nodeNaming';
 import type { MapStore } from '../hooks/useMapStore';
 import { TRIANGLE_COLORS } from '../types';
-import type { TriangleColor, EdgeStyle } from '../types';
+import type { TriangleColor, EdgeStyle, NodeNamingMode } from '../types';
 import { useConstraints } from '../context/ConstraintsContext';
 import { DSLFieldsEditor } from './DSLFieldsEditor';
 
@@ -16,16 +18,49 @@ const COLOR_NAMES: Record<TriangleColor, string> = {
   '#9b59b6': 'Purple',
 };
 
+function NamingSelect({ value, onChange, label }: {
+  value: NodeNamingMode;
+  onChange: (mode: NodeNamingMode) => void;
+  label: string;
+}) {
+  return (
+    <div className="field-group">
+      <label className="field-label" htmlFor="node-type">{label}</label>
+      <select id="node-type" className="field-select" value={value}
+        onChange={(event) => onChange(event.target.value as NodeNamingMode)}>
+        <option value="room">Room · 房间</option>
+        <option value="elevator">Elevator lobby · 电梯厅</option>
+        <option value="staircase">Stairwell · 楼梯间</option>
+        <option value="custom">Custom · 自定义</option>
+      </select>
+    </div>
+  );
+}
+
 export function RightPanel({ store }: Props) {
-  const { state, updateTriangle, deleteTriangle, updateLine, deleteLine, updateMeta } = store;
+  const { state, updateTriangle, deleteTriangles, updateLine, deleteLine, updateMeta } = store;
   const { selection, triangles, lines, meta } = state;
   const { constraints, loading: constraintsLoading } = useConstraints();
+
+  const labelRef = useRef<HTMLInputElement>(null);
+  const tri = selection.kind === 'triangles' && selection.ids.length === 1
+    ? triangles.find((node) => node.id === selection.ids[0]) : undefined;
+  const template = tri?.template;
+  useLayoutEffect(() => {
+    if (selection.kind !== 'triangles' || !selection.naming || !template) return;
+    const input = labelRef.current;
+    if (!input) return;
+    input.focus({ preventScroll: true });
+    const caret = nameCaret(template);
+    input.setSelectionRange(caret, caret);
+  }, [selection, template]);
 
   // ── Nothing selected → map meta panel ────────────────────
   if (selection.kind === 'none') {
     return (
       <aside className="right-panel">
         <h2 className="panel-title">Map Properties</h2>
+        <NamingSelect label="New node type" value={state.nodeNamingMode} onChange={store.setNodeNamingMode} />
 
         <div className="field-group">
           <label className="field-label">Map Name</label>
@@ -52,20 +87,32 @@ export function RightPanel({ store }: Props) {
       </aside>
     );
   }
-  if (selection.kind === 'triangles' && selection.ids.length !== 1) return <aside className="right-panel" />;
+  if (selection.kind === 'triangles' && selection.ids.length > 1) {
+    return (
+      <aside className="right-panel">
+        <h2 className="panel-title">{selection.ids.length} nodes selected</h2>
+        <button className="btn btn-danger" onClick={() => deleteTriangles(selection.ids)}>
+          Delete Selected Nodes
+        </button>
+      </aside>
+    );
+  }
 
   // ── Triangle panel ────────────────────────────────────────
   if (selection.kind === 'triangles') {
-    const tri = triangles.find((t) => t.id === selection.ids[0]);
     if (!tri) return null;
 
     return (
       <aside className="right-panel">
         <h2 className="panel-title">Node Properties</h2>
+        <NamingSelect label="Node type" value={namingMode(tri.template)}
+          onChange={(mode) => store.setNodeNamingMode(mode, tri.id)} />
 
         <div className="field-group">
-          <label className="field-label">Label</label>
+          <label className="field-label" htmlFor="node-label">Label</label>
           <input
+            id="node-label"
+            ref={labelRef}
             className="field-input"
             type="text"
             value={tri.label}
@@ -129,7 +176,7 @@ export function RightPanel({ store }: Props) {
 
         <button
           className="btn btn-danger"
-          onClick={() => deleteTriangle(tri.id)}
+          onClick={() => deleteTriangles([tri.id])}
         >
           Delete Node
         </button>
